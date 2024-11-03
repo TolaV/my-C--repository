@@ -1,102 +1,118 @@
-﻿using System;
+using System;
 
 namespace HM02
 {
-    public class Lecture
+    public abstract class LessonItem
     {
         public string Description { get; set; }
-        public string Topic { get; set; }
-        public string LinkToTheTask { get; set; }
-        public string LinkToTheSolution { get; set; }
 
-        public Lecture()
+        protected LessonItem(string description)
         {
-            Description = string.Empty;
-            Topic = string.Empty;
+            Description = description ?? string.Empty;
         }
-        public Lecture(string description, string topic)
+
+        public abstract LessonItem Clone();
+    }
+
+    public class Lecture : LessonItem
+    {
+        public string Topic { get; set; }
+
+        public Lecture(string description, string topic) : base(description)
         {
-            Description = description;
-            Topic = topic;
+            Topic = topic ?? string.Empty;
         }
-        public Lecture Clone()
+
+        public override LessonItem Clone()
         {
             return new Lecture(this.Description, this.Topic);
         }
     }
-    public class PracticalLesson
+
+    public class PracticalLesson : LessonItem
     {
-        public string Description { get; set; }
         public string LinkToTheTask { get; set; }
         public string LinkToTheSolution { get; set; }
 
-        public PracticalLesson()
+        public PracticalLesson(string description, string linkToTheTask, string linkToTheSolution) : base(description)
         {
-            Description = string.Empty;
-            LinkToTheTask = string.Empty;
-            LinkToTheSolution = string.Empty;
+            LinkToTheTask = linkToTheTask ?? string.Empty;
+            LinkToTheSolution = linkToTheSolution ?? string.Empty;
         }
-        public PracticalLesson(string description, string linkToTheTask, string linkToTheSolution)
-        {
-            Description = description;
-            LinkToTheTask = linkToTheTask;
-            LinkToTheSolution = linkToTheSolution;
-        }
-        public PracticalLesson Clone()
+
+        public override LessonItem Clone()
         {
             return new PracticalLesson(this.Description, this.LinkToTheTask, this.LinkToTheSolution);
         }
     }
-    class Training
-    {
-        private List<object> items = new List<object>();
 
-        public void Add(object item)
+    public class Training
+    {
+        private LessonItem[] items;
+        private int count;
+
+        public Training()
         {
-            items.Add(item);
+            items = new LessonItem[4]; 
+            count = 0;
         }
+
+        public void Add(LessonItem item)
+        {
+            if (count >= items.Length)
+            {
+                Resize();
+            }
+            items[count] = item;
+            count++;
+        }
+
+        private void Resize()
+        {
+            int newSize = items.Length * 2; 
+            LessonItem[] newArray = new LessonItem[newSize]; 
+            Array.Copy(items, newArray, items.Length); 
+            items = newArray; 
+        }
+
         public bool IsPractical()
         {
-            foreach (var item in items)
+            for (int i = 0; i < count; i++)
             {
-                if (!(item is PracticalLesson))
+                if (!(items[i] is PracticalLesson)) 
                 {
                     return false;
                 }
             }
             return true;
         }
+
         public Training Clone()
         {
             var clonedTraining = new Training();
-            foreach (var item in items)
+            for (int i = 0; i < count; i++)
             {
-                if (item is Lecture lecture)
-                {
-                    clonedTraining.Add(lecture.Clone());
-                }
-                else if (item is PracticalLesson practicalLesson)
-                {
-                    clonedTraining.Add(practicalLesson.Clone());
-                }
+                clonedTraining.Add(items[i].Clone()); 
             }
             return clonedTraining;
         }
+
         public void Display()
         {
-            foreach (var item in items)
+            for (int i = 0; i < count; i++)
             {
-                if (item is Lecture lecture)
+                if (items[i] is Lecture lecture)
                 {
                     Console.WriteLine($"Lecture: {lecture.Description}, topic: {lecture.Topic}");
                 }
-                if (item is PracticalLesson practical)
+                else if (items[i] is PracticalLesson practical)
                 {
-                    Console.WriteLine($"Practical: {practical.Description}, link to the task: {practical.LinkToTheTask}, link to the solution: {practical.LinkToTheSolution}");
+                    Console.WriteLine($"Practical: {practical.Description}, link to task: {practical.LinkToTheTask}, link to solution: {practical.LinkToTheSolution}");
                 }
             }
         }
     }
+
     class Program
     {
         static void Main(string[] args)
@@ -107,17 +123,15 @@ namespace HM02
             training.Add(new PracticalLesson("Hands-on C# Basics", "Solve basic problems", "solution1"));
             training.Add(new PracticalLesson("Hands-on Advanced C#", "Solve advanced problems", "solution2"));
 
-            Console.WriteLine("Original Training:");
+            Console.WriteLine("Original Training");
             training.Display();
 
             var clonedTraining = training.Clone();
-
-            Console.WriteLine("\nCloned Training:");
+            Console.WriteLine("\nCloned Training");
             clonedTraining.Display();
 
             training.Add(new Lecture("Advanced C#", "Deep Dive"));
             Console.WriteLine("\nIs the original training practical only? " + training.IsPractical());
-
         }
     }
 }
